@@ -25,11 +25,3 @@ PRODUCT_BRAND := Android
 PRODUCT_NAME := sdk_phone64_x86_64_digitalis
 PRODUCT_DEVICE := emu64xa
 PRODUCT_MODEL := Android SDK built for x86_64 with ARM64 translated (Digitalis)
-
-# region digitalis
-# Binary translation (interpreter + lite JIT) is slower than native execution.
-# Google Cuttlefish uses multiplier=50 for cross-architecture translation.
-# See: device/google/cuttlefish/host/commands/assemble_cvd/bootconfig_args.cpp
-PRODUCT_SYSTEM_PROPERTIES += \
-    ro.hw_timeout_multiplier=50
-# endregion
