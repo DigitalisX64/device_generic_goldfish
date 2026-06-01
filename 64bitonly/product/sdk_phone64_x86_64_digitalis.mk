@@ -16,6 +16,14 @@
 
 # sdk_phone64_x86_64 with ARM64 translated (Digitalis)
 
+# Ship a Digitalis-specific emulator config.ini with a larger data partition
+# (20G vs the inherited 10G) so prebuilt ARM64 APKs — which are large and
+# expand on install — fit without passing -partition-size at launch. This must
+# precede the inherit below: PRODUCT_COPY_FILES dedups by destination keeping
+# the first entry, so this wins over phone.mk's config.ini.nexus5.
+PRODUCT_COPY_FILES += \
+    device/generic/goldfish/data/etc/config.ini.digitalis:config.ini
+
 $(call inherit-product, device/generic/goldfish/64bitonly/product/sdk_phone64_x86_64.mk)
 
 $(call inherit-product, frameworks/libs/binary_translation/enable_arm64_to_x86_64.mk)
