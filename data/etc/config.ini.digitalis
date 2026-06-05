@@ -1,5 +1,5 @@
 avd.ini.encoding=UTF-8
-disk.dataPartition.size=20G
+disk.dataPartition.size=25G
 fastboot.forceColdBoot = yes
 hw.accelerometer=yes
 hw.audioInput=yes
