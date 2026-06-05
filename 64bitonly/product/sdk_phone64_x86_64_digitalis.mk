@@ -24,15 +24,6 @@
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/config.ini.digitalis:config.ini
 
-# Synthetic ARM64 /proc/cpuinfo for guest apps. Berberis redirects guest
-# /proc/cpuinfo opens to /system/etc/cpuinfo.arm64.txt (kGuestCpuinfoPath),
-# because the host x86_64 cpuinfo can't be parsed by an ARM64 build of the
-# cpuinfo library. Without this file the redirect opens nothing and
-# cpuinfo-based code (XNNPACK in com.shazam.android, etc.) aborts with
-# "cpuinfo_get_processors_count called before cpuinfo is initialized".
-PRODUCT_COPY_FILES += \
-    device/generic/goldfish/data/etc/cpuinfo.arm64.txt:system/etc/cpuinfo.arm64.txt
-
 $(call inherit-product, device/generic/goldfish/64bitonly/product/sdk_phone64_x86_64.mk)
 
 $(call inherit-product, frameworks/libs/binary_translation/enable_arm64_to_x86_64.mk)
