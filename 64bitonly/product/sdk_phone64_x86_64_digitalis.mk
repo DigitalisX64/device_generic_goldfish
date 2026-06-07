@@ -17,8 +17,9 @@
 # sdk_phone64_x86_64 with ARM64 translated (Digitalis)
 
 # Ship a Digitalis-specific emulator config.ini with a larger data partition
-# (25G vs the inherited 10G) so prebuilt ARM64 APKs — which are large and
-# expand on install — fit without passing -partition-size at launch. This must
+# (80G vs the inherited 10G) so prebuilt ARM64 APKs — which are large and expand
+# on install, plus asset-heavy games like Genshin Impact (~60-80G of post-install
+# resource downloads) — fit without passing -partition-size at launch. This must
 # precede the inherit below: PRODUCT_COPY_FILES dedups by destination keeping
 # the first entry, so this wins over phone.mk's config.ini.nexus5.
 PRODUCT_COPY_FILES += \
