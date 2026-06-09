@@ -30,7 +30,16 @@ on early-init
     setprop debug.renderengine.backend ${ro.boot.debug.renderengine.backend:-skiaglthreaded}
     setprop debug.stagefright.ccodec ${ro.boot.debug.stagefright.ccodec}
     setprop debug.sf.nobootanimation ${ro.boot.debug.sf.nobootanimation}
-    setprop debug.angle.feature_overrides_enabled ${ro.boot.hardware.angle_feature_overrides_enabled}
+    # region digitalis
+    # setprop debug.angle.feature_overrides_enabled ${ro.boot.hardware.angle_feature_overrides_enabled}
+    # Default ANGLE to expose OpenGL ES 3.2 (and the matching extensions) even
+    # when the guest Vulkan driver does not advertise every 3.2 feature (e.g.
+    # geometry/tessellation shaders are not surfaced by the gfxstream guest ICD).
+    # This lets the ANGLE GLES driver provide ES 3.2 without patching gfxstream's
+    # GLES path. It is a no-op on images that do not use ANGLE as the GLES driver,
+    # and the emulator can still override it via androidboot.hardware.angle_*.
+    setprop debug.angle.feature_overrides_enabled ${ro.boot.hardware.angle_feature_overrides_enabled:-exposeNonConformantExtensionsAndVersions}
+    # endregion
     setprop debug.angle.feature_overrides_disabled ${ro.boot.hardware.angle_feature_overrides_disabled}
     setprop vendor.qemu.dev.bootcomplete 0
 
