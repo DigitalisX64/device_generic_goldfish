@@ -44,16 +44,41 @@ $(call inherit-product, frameworks/libs/binary_translation/enable_arm64_to_x86_6
 # runs; ro.* properties are write-once, so this value wins over init's later
 # setprop regardless of whether the emulator supplies androidboot.hardwareegl.
 # Scoped to the digitalis product so other goldfish images are unaffected.
-PRODUCT_VENDOR_PROPERTIES += \
-    ro.hardware.egl=angle
+#
+# DISABLED on AOSP 17 (API 37). ANGLE's Vulkan backend does not initialize
+# against the emulator AOSP 17 ships in prebuilts/android-emulator: EGL then
+# fails to initialize at all and surfaceflinger aborts in a loop, so the image
+# never boots.
+#
+#   E libEGL : ANGLE Display::initialize error 0: Internal Vulkan error (-3)
+#   W libEGL : eglInitialize(...) failed (EGL_NOT_INITIALIZED)
+#   F SurfaceFlinger: no suitable EGLConfig found, giving up
+#   E init   : process with updatable components 'surfaceflinger' exited 4
+#             times before boot completed
+#
+# That emulator says as much itself on startup: "Guest Angle is still unstable
+# for API > 35". The Android 16 tree runs ANGLE because it carries a locally
+# rebuilt emulator (prebuilts/android-emulator on branch
+# digitalis-local-emulator) with gfxstream fixes that the stock AOSP 17 prebuilt
+# does not have. Requiring that build would make a custom emulator a condition
+# of running Digitalis 17, so gfxstream's GLES emulation -- the upstream default
+# -- stands until the shipped emulator supports ANGLE at this API level.
+#
+# Re-enable by uncommenting both blocks below; nothing else depends on them.
+# init.ranchu.rc's ANGLE feature override stays as it is: it is a no-op unless
+# ANGLE is the GLES driver.
+#PRODUCT_VENDOR_PROPERTIES += \
+#    ro.hardware.egl=angle
 
 # Advertise OpenGL ES 3.2 (0x00030002) to the framework to match the version the
 # ANGLE driver now exposes (init.ranchu.rc enables ANGLE's
 # exposeNonConformantExtensionsAndVersions). init.ranchu.rc sets ro.opengles.version
 # from the emulator's ro.boot.opengles.version (3.1), but ro.* properties are
 # write-once and build.prop is loaded first, so this value wins.
-PRODUCT_VENDOR_PROPERTIES += \
-    ro.opengles.version=196610
+# Disabled with the ANGLE default above: without ANGLE the GLES driver is
+# gfxstream's, which provides 3.1, so advertising 3.2 here would overstate it.
+#PRODUCT_VENDOR_PROPERTIES += \
+#    ro.opengles.version=196610
 
 # Overrides
 PRODUCT_BRAND := Android
