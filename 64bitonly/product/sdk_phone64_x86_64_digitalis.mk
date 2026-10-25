@@ -25,6 +25,18 @@
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/config.ini.digitalis:config.ini
 
+# Ship a Digitalis-specific advancedFeatures.ini that turns on the virtio-gpu
+# transport. The Android 17 kernel retires the goldfish pipe -- the guest has
+# only /dev/goldfish_pipe_dprctd -- and the gfxstream Vulkan driver takes the
+# virtio-gpu path instead, so without VirtioGpuNativeSync and
+# VirtioGpuFenceContexts there is no /dev/dri/* for it to open: every Vulkan app
+# fails vkCreateInstance with VK_ERROR_INITIALIZATION_FAILED and renders a black
+# frame, while GLES keeps working through the deprecated pipe node and hides it.
+# Same ordering rule as above: this must precede the inherit so it wins over
+# phone.mk's advancedFeatures.ini.
+PRODUCT_COPY_FILES += \
+    device/generic/goldfish/data/etc/advancedFeatures.ini.digitalis:advancedFeatures.ini
+
 $(call inherit-product, device/generic/goldfish/64bitonly/product/sdk_phone64_x86_64.mk)
 
 $(call inherit-product, frameworks/libs/binary_translation/enable_arm64_to_x86_64.mk)
@@ -45,40 +57,39 @@ $(call inherit-product, frameworks/libs/binary_translation/enable_arm64_to_x86_6
 # setprop regardless of whether the emulator supplies androidboot.hardwareegl.
 # Scoped to the digitalis product so other goldfish images are unaffected.
 #
-# DISABLED on AOSP 17 (API 37). ANGLE's Vulkan backend does not initialize
-# against the emulator AOSP 17 ships in prebuilts/android-emulator: EGL then
-# fails to initialize at all and surfaceflinger aborts in a loop, so the image
-# never boots.
+# This was briefly disabled on AOSP 17 because ANGLE's Vulkan backend could not
+# initialize -- EGL failed outright and surfaceflinger aborted in a loop, so the
+# image never booted:
 #
 #   E libEGL : ANGLE Display::initialize error 0: Internal Vulkan error (-3)
-#   W libEGL : eglInitialize(...) failed (EGL_NOT_INITIALIZED)
 #   F SurfaceFlinger: no suitable EGLConfig found, giving up
-#   E init   : process with updatable components 'surfaceflinger' exited 4
-#             times before boot completed
 #
-# That emulator says as much itself on startup: "Guest Angle is still unstable
-# for API > 35". The Android 16 tree runs ANGLE because it carries a locally
-# rebuilt emulator (prebuilts/android-emulator on branch
-# digitalis-local-emulator) with gfxstream fixes that the stock AOSP 17 prebuilt
-# does not have. Requiring that build would make a custom emulator a condition
-# of running Digitalis 17, so gfxstream's GLES emulation -- the upstream default
-# -- stands until the shipped emulator supports ANGLE at this API level.
+# The cause was not ANGLE. The Android 17 kernel retires the goldfish pipe, so
+# the gfxstream Vulkan driver needs the virtio-gpu transport, and without it
+# there is no /dev/dri/* and no working Vulkan for ANGLE to build on. With
+# virtio-gpu enabled (advancedFeatures.ini.digitalis, plus the matching flags in
+# the deployed emulator) ANGLE initializes, surfaceflinger stays up, and the
+# image boots.
 #
-# Re-enable by uncommenting both blocks below; nothing else depends on them.
+# Keeping ANGLE matters beyond GLES 3.2: on gfxstream's GLES some games render
+# nothing at all. Beach Buggy Racing draws a black screen under gfxstream and
+# renders normally under ANGLE, matching the Android 16 image almost pixel for
+# pixel (1431 vs 1434 distinct colours sampled over the frame).
+#
 # init.ranchu.rc's ANGLE feature override stays as it is: it is a no-op unless
 # ANGLE is the GLES driver.
-#PRODUCT_VENDOR_PROPERTIES += \
-#    ro.hardware.egl=angle
+PRODUCT_VENDOR_PROPERTIES += \
+    ro.hardware.egl=angle
 
 # Advertise OpenGL ES 3.2 (0x00030002) to the framework to match the version the
 # ANGLE driver now exposes (init.ranchu.rc enables ANGLE's
 # exposeNonConformantExtensionsAndVersions). init.ranchu.rc sets ro.opengles.version
 # from the emulator's ro.boot.opengles.version (3.1), but ro.* properties are
 # write-once and build.prop is loaded first, so this value wins.
-# Disabled with the ANGLE default above: without ANGLE the GLES driver is
+# Paired with the ANGLE default above; without ANGLE the GLES driver is
 # gfxstream's, which provides 3.1, so advertising 3.2 here would overstate it.
-#PRODUCT_VENDOR_PROPERTIES += \
-#    ro.opengles.version=196610
+PRODUCT_VENDOR_PROPERTIES += \
+    ro.opengles.version=196610
 
 # Overrides
 PRODUCT_BRAND := Android

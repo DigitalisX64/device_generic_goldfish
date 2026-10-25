@@ -1,0 +1,41 @@
+BluetoothEmulation = on
+GrallocSync = on
+GLDMA = on
+LogcatPipe = on
+GLAsyncSwap = on
+GLESDynamicVersion = on
+EncryptUserData = on
+IntelPerformanceMonitoringUnit = on
+VirtioWifi = on
+HostComposition = on
+RefCountPipe = on
+VirtioInput = on
+HardwareDecoder = on
+DynamicPartition = on
+ModemSimulator = on
+MultiDisplay = on
+YUVCache = on
+GLDirectMem = on
+VulkanNullOptionalStrings = on
+VulkanIgnoredHandles = on
+Mac80211hwsimUserspaceManaged = on
+VirtconsoleLogcat = on
+VirtioVsockPipe = on
+AndroidbootProps2 = on
+DeviceSkinOverlay = on
+VulkanQueueSubmitWithCommands = on
+VulkanBatchedDescriptorSetUpdate = on
+DeviceStateOnBoot = on
+HWCMultiConfigs = on
+VirtioSndCard = on
+DeviceKeyboardHasAssistKey = on
+Uwb = on
+VulkanVirtualQueue = on
+QemuCameraSensorOrientation = on
+# The Android 17 kernel retires the goldfish pipe (the guest has only
+# /dev/goldfish_pipe_dprctd), so the gfxstream Vulkan driver takes the
+# virtio-gpu path. Without these the guest has no /dev/dri/* to open and
+# every Vulkan app fails vkCreateInstance with VK_ERROR_INITIALIZATION_FAILED
+# and renders a black frame, while GLES still works via the deprecated node.
+VirtioGpuNativeSync = on
+VirtioGpuFenceContexts = on
