@@ -41,55 +41,47 @@ $(call inherit-product, device/generic/goldfish/64bitonly/product/sdk_phone64_x8
 
 $(call inherit-product, frameworks/libs/binary_translation/enable_arm64_to_x86_64.mk)
 
-# Default the GLES driver to ANGLE (the libEGL_angle / libGLESv1_CM_angle /
-# libGLESv2_angle drivers already shipped by generic.mk) instead of gfxstream's
-# GLES emulation. ANGLE implements OpenGL ES on top of Vulkan, so GLES calls are
+# Why the GLES driver is NOT switched to ANGLE.
+#
+# ANGLE (the libEGL_angle / libGLESv1_CM_angle / libGLESv2_angle drivers already
+# shipped by generic.mk) implements OpenGL ES on top of Vulkan: GLES calls are
 # translated to Vulkan in-guest and only Vulkan crosses to the host via the
-# gfxstream VkDecoder. This gives full GLES 3.2 (which ANGLE exposes) and better
-# multisample/MSAA behaviour without patching gfxstream's GLES path.
+# gfxstream VkDecoder. It exposes full GLES 3.2 and better multisample behaviour
+# without patching gfxstream's GLES path, so it looks like a straight upgrade.
 #
-# Android's EGL loader selects the driver by the ro.hardware.egl suffix
-# (libEGL_<suffix>.so); for "angle" it loads libEGL_angle.so from /system/lib64.
-# init.ranchu.rc sets ro.hardware.egl from ${ro.boot.hardwareegl:-emulation}, so
-# it would otherwise default to gfxstream emulation. Setting ro.hardware.egl here
-# lands it in build.prop, which second-stage init loads before `on early-init`
-# runs; ro.* properties are write-once, so this value wins over init's later
-# setprop regardless of whether the emulator supplies androidboot.hardwareegl.
-# Scoped to the digitalis product so other goldfish images are unaffected.
+# Selecting it is a one-line change: Android's EGL loader picks the driver by the
+# ro.hardware.egl suffix (libEGL_<suffix>.so), and setting ro.hardware.egl=angle
+# here would land it in build.prop, which second-stage init loads before
+# `on early-init` runs -- ro.* properties are write-once, so it would win over
+# init.ranchu.rc's later setprop. Do not make that change without re-measuring:
 #
-# This was briefly disabled on AOSP 17 because ANGLE's Vulkan backend could not
-# initialize -- EGL failed outright and surfaceflinger aborted in a loop, so the
-# image never booted:
+# BOTH PROPERTIES ARE LEFT OFF DELIBERATELY. ANGLE boots and runs on this image
+# once virtio-gpu supplies Vulkan (see advancedFeatures.ini.digitalis above), but
+# measuring it against gfxstream's GLES on the prebuilt game corpus shows it is a
+# net loss, so the default stays on gfxstream.
 #
-#   E libEGL : ANGLE Display::initialize error 0: Internal Vulkan error (-3)
-#   F SurfaceFlinger: no suitable EGLConfig found, giving up
+# Measured on one pristine boot each (8 apps installed, no memory pressure), the
+# same games, three launch attempts apiece:
 #
-# The cause was not ANGLE. The Android 17 kernel retires the goldfish pipe, so
-# the gfxstream Vulkan driver needs the virtio-gpu transport, and without it
-# there is no /dev/dri/* and no working Vulkan for ANGLE to build on. With
-# virtio-gpu enabled (advancedFeatures.ini.digitalis, plus the matching flags in
-# the deployed emulator) ANGLE initializes, surfaceflinger stays up, and the
-# image boots.
+#   ANGLE fixes    beachbuggy (0/60 -> renders), dr2play (0/60 -> 22/60)
+#   ANGLE breaks   artblitz, bouncyhoops, bucketcrusher, burgerplease
+#                  (all pass under gfxstream GLES; all 0/60 under ANGLE, 3/3)
+#   ANGLE weakens  ballz 60/60 -> 14/60, bowmasters -> 8/60
 #
-# Keeping ANGLE matters beyond GLES 3.2: on gfxstream's GLES some games render
-# nothing at all. Beach Buggy Racing draws a black screen under gfxstream and
-# renders normally under ANGLE, matching the Android 16 image almost pixel for
-# pixel (1431 vs 1434 distinct colours sampled over the frame).
+# Four regressions to buy two fixes is not a trade worth taking, and the two
+# games it fixes render blank under gfxstream for reasons that belong in
+# gfxstream's GLES path rather than in a driver swap for the whole image.
 #
-# init.ranchu.rc's ANGLE feature override stays as it is: it is a no-op unless
-# ANGLE is the GLES driver.
-PRODUCT_VENDOR_PROPERTIES += \
-    ro.hardware.egl=angle
-
-# Advertise OpenGL ES 3.2 (0x00030002) to the framework to match the version the
-# ANGLE driver now exposes (init.ranchu.rc enables ANGLE's
-# exposeNonConformantExtensionsAndVersions). init.ranchu.rc sets ro.opengles.version
-# from the emulator's ro.boot.opengles.version (3.1), but ro.* properties are
-# write-once and build.prop is loaded first, so this value wins.
-# Paired with the ANGLE default above; without ANGLE the GLES driver is
-# gfxstream's, which provides 3.1, so advertising 3.2 here would overstate it.
-PRODUCT_VENDOR_PROPERTIES += \
-    ro.opengles.version=196610
+# If this is revisited, note that ANGLE also needs the gfxstream process-teardown
+# fix in the host (digitalis/docs/emulator-gfxstream-deploy.md, Symptom 4): ANGLE
+# routes every app through the Vulkan decoder, which turns a rare host race into a
+# SIGSEGV about a minute into every boot.
+#
+# ro.hardware.egl is therefore left to init.ranchu.rc, which derives it from
+# ${ro.boot.hardwareegl:-emulation} and so selects gfxstream's GLES driver, and
+# ro.opengles.version is left to the emulator's ro.boot.opengles.version (3.1).
+# Advertising 3.2 here would overstate what gfxstream's GLES provides.
+# init.ranchu.rc's ANGLE feature override is a no-op unless ANGLE is the driver.
 
 # Overrides
 PRODUCT_BRAND := Android
