@@ -20,3 +20,12 @@ image.sysdir.1=x86/
 skin.dynamic=no
 skin.name=1080x1920
 skin.path=1080x1920
+
+# Run graphics over the virtio-gpu address-space transport instead of the
+# goldfish pipe (hw.gltransport defaults to "pipe"). The Android 17 kernel
+# retires that pipe -- the guest has only /dev/goldfish_pipe_dprctd -- and a
+# guest Vulkan call issued over it never gets its reply: the caller spins in
+# AddressSpaceStream::speculativeRead forever. With ANGLE as the GLES driver
+# every process needs Vulkan, so SystemUI's RenderThread hit that spin while
+# creating its first window surface and the launcher never drew.
+hw.gltransport = virtio-gpu-asg
