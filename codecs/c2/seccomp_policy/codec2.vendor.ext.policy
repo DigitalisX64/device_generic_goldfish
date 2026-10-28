@@ -1,0 +1,17 @@
+# Device-specific seccomp additions for android.hardware.media.c2-service-goldfish,
+# loaded by service.cpp on top of android.hardware.media.c2-default-seccomp_policy.
+#
+# The service allocates its output buffers through the ranchu gralloc mapper,
+# which opens a gfxstream HostConnection. On the virtio-gpu transport that goes
+# through DrmVirtGpuDevice::init, whose first log line initialises mesa's logger.
+# mesa_log_init_once asks __normal_user() whether it may open a log file, and
+# that is "geteuid() == getuid() && getegid() == getgid()" -- four credential
+# calls, of which the default policy allows only getuid. Each of the other three
+# is a SIGSYS that minijail turns into an abort of the whole service, so a single
+# video decode took down every app that played one.
+geteuid: 1
+geteuid32: 1
+getegid: 1
+getegid32: 1
+getgid: 1
+getgid32: 1

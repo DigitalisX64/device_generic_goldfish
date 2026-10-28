@@ -58,5 +58,19 @@ cc_binary {
     ],
     required: [
         "android.hardware.media.c2-default-seccomp_policy",
+        // region digitalis
+        "codec2.vendor.ext.policy",
+        // endregion
     ],
 }
+
+// region digitalis
+// Device-specific seccomp additions layered on top of the default codec2 policy;
+// service.cpp passes this path to SetUpMinijail as the extension policy.
+prebuilt_etc {
+    name: "codec2.vendor.ext.policy",
+    vendor: true,
+    sub_dir: "seccomp_policy",
+    src: "seccomp_policy/codec2.vendor.ext.policy",
+}
+// endregion
